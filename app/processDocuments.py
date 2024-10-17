@@ -8,7 +8,6 @@ import json
 import boto3
 import whisper
 import PyPDF2
-import pymongo
 import io
 import os
 import re
@@ -28,7 +27,7 @@ s3_client = boto3.client('s3')
 bucket_name = 'primavera-bucket'  # Replace with your actual bucket name
 
 # Load the Whisper model for audio files
-model = whisper.load_model("base",cache_folder="/tmp")
+model = whisper.load_model("base")
 
 def lambda_handler(event):
     # Retrieve file information from the S3 event

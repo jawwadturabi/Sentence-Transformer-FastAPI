@@ -1,9 +1,14 @@
-from fastapi import FastAPI, HTTPException,Request
+from fastapi import FastAPI, HTTPException, Request
 from mangum import Mangum
 from processDocuments import lambda_handler
 
 app = FastAPI()
 handler = Mangum(app)
+
+import os
+
+os.environ["HF_HOME"] = "/tmp"
+
 
 @app.get("/")
 def get():
@@ -16,7 +21,9 @@ async def process_document(request: Request):
         payload = await request.json()
 
         if "Records" not in payload:
-            raise HTTPException(status_code=400, detail="Invalid payload: 'Records' key missing")
+            raise HTTPException(
+                status_code=400, detail="Invalid payload: 'Records' key missing"
+            )
 
         result = lambda_handler(payload)
 

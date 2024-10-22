@@ -3,11 +3,11 @@
 import os
 import tempfile
 import PyPDF2
-# import whisper
-from config import model_whisper
+import whisper
+# from config import model_whisper
 from utils import upload_pdf_images_to_s3, call_openai_to_extract_from_images
 
-# model_whisper = None
+model_whisper = None
 
 
 def extract_text_from_pdf(file_stream, database_document_id):
@@ -41,18 +41,17 @@ def extract_text_from_audio(file_stream):
     """Transcribe audio using Whisper"""
     # Create a temporary file to store the audio file
     print("Creating temporary audio file...")
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_audio_file:
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False,dir=".") as temp_audio_file:
         temp_audio_file.write(file_stream.read())
         temp_audio_path = temp_audio_file.name
-
     # Use Whisper to transcribe the audio
     print(f"Transcribing audio file: {temp_audio_path}")
-    # if model_whisper is None:
-    #     model_whisper = whisper.load_model("large-v2")
+    if model_whisper is None:
+       model_whisper = whisper.load_model("tiny")
     result = model_whisper.transcribe(temp_audio_path)
     print(f"Transcription done")
 
     # Delete the temporary file after use
     os.remove(temp_audio_path)
-
+    print("result : ",result["text"])
     return result["text"]

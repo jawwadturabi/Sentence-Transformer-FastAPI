@@ -7,7 +7,6 @@ handler = Mangum(app)
 
 import os
 
-os.environ["HF_HOME"] = "/tmp"
 
 
 @app.get("/")
@@ -15,8 +14,9 @@ def get():
     return "Hello from process document app"
 
 
-@app.post("/processDocument")
+@app.post("/process_document")
 async def process_document(request: Request):
+    os.environ["HF_HOME"] = "/tmp"
     try:
         payload = await request.json()
 

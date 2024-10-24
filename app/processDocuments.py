@@ -5,7 +5,7 @@ import json
 from bson.objectid import ObjectId
 
 from config import s3_client, documents_collection
-from extractors import extract_text_from_pdf, extract_text_from_audio
+from extractors import extract_text_from_pdf, extract_text_from_audio, extract_text_from_docx, extract_text_from_xlsx, extract_text_from_pptx, extract_text_from_image
 from processors import split_text_to_chunks
 
 def lambda_handler(event):
@@ -36,15 +36,26 @@ def lambda_handler(event):
                 extracted_text = extract_text_from_pdf(file_stream, database_document_id)
             elif file_type in ['mp3', 'wav', 'm4a', 'mp4']:
                 print("Extracting text from audio...")
-                extracted_text = extract_text_from_audio(file_stream)
-            elif file_type in ['doc', 'docx', 'txt']:
-                extracted_text = "This feature is not yet implemented."
+                extracted_text = extract_text_from_audio(file_stream, file_type)
+            elif file_type in ['doc', 'docx']:
+                extracted_text = extract_text_from_docx(file_stream)
+            elif file_type in ['xls', 'xlsx']:
+                extracted_text = extract_text_from_xlsx(file_stream)
+            elif file_type in ['txt']:
+                extracted_text = file_stream.read().decode("utf-8")
+            elif file_type in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff']:
+                extracted_text = extract_text_from_image(file_stream, database_document_id)
+            elif file_type in ['ppt', 'pptx']:
+                extracted_text = extract_text_from_pptx(file_stream)
             else:
                 # Return an error if the file type is unsupported
                 return {
                     'statusCode': 400,
                     'body': json.dumps(f"Unsupported file type: {file_type}")
                 }
+            # Prepend the title to the extracted text
+            document_title = metadata.get('title', 'Untitled Document')
+            full_text = f"{document_title}\n{extracted_text}"
 
             # Convert the 'database_document_id' string to MongoDB ObjectId
             try:
@@ -63,7 +74,7 @@ def lambda_handler(event):
                 # Update its 'fulltext' field with the extracted text
                 documents_collection.update_one(
                     {"_id": database_document_id},
-                    {"$set": {"fulltext": extracted_text, "status": "processed"}}
+                    {"$set": {"fulltext": full_text, "status": "processed"}}
                 )
                 # Split the text into chunks and store in the database
                 result = split_text_to_chunks(database_document_id)
